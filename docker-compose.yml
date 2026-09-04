@@ -73,18 +73,6 @@ services:
     volumes:
       - chunk3_data:/mnt/hdd
 
-  mfscgi:
-    image: moosefs/cgi:latest
-    container_name: mfscgi
-    hostname: mfscgi
-    restart: unless-stopped
-    depends_on:
-      - mfsmaster
-    ports:
-      - "9425:9425"
-    networks:
-      - mfsnet
-
   mfsclient:
     image: moosefs/client:latest
     container_name: mfsclient
