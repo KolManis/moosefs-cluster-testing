@@ -92,7 +92,7 @@ docker exec mfsclient mfsgetsclass /mnt/mfs
 ### 6.2. Посмотреть доступные storage-классы
 
 ```bash
-docker exec mfsclient mfslistsclass -l /mnt/mfs
+docker exec mfsclient mfslistsclass /mnt/mfs
 ```
 
 В MooseFS 4 предопределены классы: **2CP** (2 копии), **3CP** (3 копии), **EC4+1** и **EC8+1** (erasure coding).
@@ -143,7 +143,9 @@ MooseFS автоматически восстановит недостающие
 ### 6.8. Проверить статус кластера через веб-интерфейс
 
 Полная картина состояния кластера — на CGI-панели:
-<http://localhost:9425/mfs.cgi?masterhost=mfsmaster&masterport=9421>
+<http://localhost:9425/mfs.cgi?masterhost=mfsmaster&masterport=9421&mastercontrolport=9421>
+
+Оба порта (`masterport` и `mastercontrolport`) должны быть **9421** — это клиентский порт мастера (matocl). Порт 9419 (matoml) — только для metalogger'а, CGI через него не работает.
 
 Вкладки:
 - **Info** — сводка по мастеру и версии;
