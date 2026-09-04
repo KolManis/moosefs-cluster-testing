@@ -1,0 +1,124 @@
+services:
+  mfsmaster:
+    image: moosefs/master:latest
+    container_name: mfsmaster
+    hostname: mfsmaster
+    restart: unless-stopped
+    ports:
+      - "9419:9419"   # metalogger
+      - "9420:9420"   # chunkservers
+      - "9421:9421"   # clients
+    environment:
+      MFS_ENV: TEST
+    networks:
+      mfsnet:
+        aliases:
+          - mfsmaster
+    volumes:
+      - master_data:/var/lib/mfs
+
+  mfsmetalogger:
+    image: moosefs/metalogger:latest
+    container_name: mfsmetalogger
+    hostname: mfsmetalogger
+    restart: unless-stopped
+    depends_on:
+      - mfsmaster
+    environment:
+      MFSMASTER_HOST: mfsmaster
+    networks:
+      - mfsnet
+    volumes:
+      - metalogger_data:/var/lib/mfs
+
+  mfschunkserver1:
+    image: moosefs/chunkserver:latest
+    container_name: mfschunkserver1
+    hostname: mfschunkserver1
+    restart: unless-stopped
+    depends_on:
+      - mfsmaster
+    environment:
+      MFSMASTER_HOST: mfsmaster
+    networks:
+      - mfsnet
+    volumes:
+      - chunk1_data:/mnt/hdd
+
+  mfschunkserver2:
+    image: moosefs/chunkserver:latest
+    container_name: mfschunkserver2
+    hostname: mfschunkserver2
+    restart: unless-stopped
+    depends_on:
+      - mfsmaster
+    environment:
+      MFSMASTER_HOST: mfsmaster
+    networks:
+      - mfsnet
+    volumes:
+      - chunk2_data:/mnt/hdd
+
+  mfschunkserver3:
+    image: moosefs/chunkserver:latest
+    container_name: mfschunkserver3
+    hostname: mfschunkserver3
+    restart: unless-stopped
+    depends_on:
+      - mfsmaster
+    environment:
+      MFSMASTER_HOST: mfsmaster
+    networks:
+      - mfsnet
+    volumes:
+      - chunk3_data:/mnt/hdd
+
+  mfscgi:
+    image: moosefs/cgi:latest
+    container_name: mfscgi
+    hostname: mfscgi
+    restart: unless-stopped
+    depends_on:
+      - mfsmaster
+    ports:
+      - "9425:9425"
+    networks:
+      - mfsnet
+
+  mfsclient:
+    image: moosefs/client:latest
+    container_name: mfsclient
+    hostname: mfsclient
+    restart: unless-stopped
+    depends_on:
+      - mfsmaster
+      - mfschunkserver1
+      - mfschunkserver2
+      - mfschunkserver3
+    environment:
+      MFSMASTER_HOST: mfsmaster
+    cap_add:
+      - SYS_ADMIN
+    devices:
+      - /dev/fuse
+    security_opt:
+      - apparmor:unconfined
+    networks:
+      - mfsnet
+    volumes:
+      - client_mnt:/mnt/mfs
+    command: >
+      sh -c "mfsmount /mnt/mfs -o mfsmaster=mfsmaster,nonempty &&
+             tail -f /dev/null"
+
+networks:
+  mfsnet:
+    driver: bridge
+
+volumes:
+  master_data:
+  metalogger_data:
+  chunk1_data:
+  chunk2_data:
+  chunk3_data:
+  client_mnt:
