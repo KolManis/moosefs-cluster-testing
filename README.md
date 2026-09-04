@@ -84,16 +84,26 @@ docker compose ps
 
 ```bash
 docker exec mfsclient df -h /mnt/mfs
-docker exec mfsclient mfsgetgoal /mnt/mfs
+docker exec mfsclient mfsgetsclass /mnt/mfs
 ```
 
-### 6.2. Установить фактор репликации goal=2 (chunk хранится на 2 узлах)
+По умолчанию используется storage class **2CP** (2 копии каждого chunk'а).
+
+### 6.2. Посмотреть доступные storage-классы
 
 ```bash
-docker exec mfsclient mfssetgoal -r 2 /mnt/mfs
+docker exec mfsclient mfslistsclass -l /mnt/mfs
 ```
 
-### 6.3. Записать тестовые данные
+В MooseFS 4 предопределены классы: **2CP** (2 копии), **3CP** (3 копии), **EC4+1** и **EC8+1** (erasure coding).
+
+### 6.3. Сменить фактор репликации на 3 копии (по желанию)
+
+```bash
+docker exec mfsclient mfssetsclass -r 3CP /mnt/mfs
+```
+
+### 6.4. Записать тестовые данные
 
 ```bash
 docker exec mfsclient sh -c "dd if=/dev/urandom of=/mnt/mfs/test.bin bs=1M count=100"
@@ -101,15 +111,15 @@ docker exec mfsclient sh -c "echo 'Hello MooseFS Cluster' > /mnt/mfs/hello.txt"
 docker exec mfsclient ls -lh /mnt/mfs
 ```
 
-### 6.4. Посмотреть, как chunk'и распределились по узлам
+### 6.5. Посмотреть, как chunk'и распределились по узлам
 
 ```bash
 docker exec mfsclient mfsfileinfo /mnt/mfs/test.bin
 ```
 
-В выводе должно быть видно, что каждый chunk имеет 2 копии на разных `mfschunkserverN`.
+В выводе видно, что каждый chunk имеет 2 копии на разных `mfschunkserverN` (при классе 2CP).
 
-### 6.5. Тест отказоустойчивости — уронить один chunk-сервер
+### 6.6. Тест отказоустойчивости — уронить один chunk-сервер
 
 ```bash
 docker stop mfschunkserver2
@@ -118,9 +128,9 @@ docker exec mfsclient cat /mnt/mfs/hello.txt
 docker exec mfsclient md5sum /mnt/mfs/test.bin
 ```
 
-Файл по-прежнему читается, так как копия chunk'ов есть на других узлах.
+Файл по-прежнему читается, так как копии chunk'ов есть на других узлах.
 
-### 6.6. Вернуть узел в строй и проверить восстановление реплик
+### 6.7. Вернуть узел в строй и проверить восстановление реплик
 
 ```bash
 docker start mfschunkserver2
@@ -128,15 +138,18 @@ sleep 20
 docker exec mfsclient mfsfileinfo /mnt/mfs/test.bin
 ```
 
-MooseFS автоматически восстановит недостающие копии chunk'ов до goal=2.
+MooseFS автоматически восстановит недостающие копии chunk'ов до нужного количества.
 
-### 6.7. Проверить статус кластера через мастер
+### 6.8. Проверить статус кластера через веб-интерфейс
 
-```bash
-docker exec mfsmaster mfscli -SIN
-docker exec mfsmaster mfscli -SCS   # chunk servers
-docker exec mfsmaster mfscli -SHD   # health / disk
-```
+Полная картина состояния кластера — на CGI-панели:
+<http://localhost:9425/mfs.cgi?masterhost=mfsmaster&masterport=9421>
+
+Вкладки:
+- **Info** — сводка по мастеру и версии;
+- **Servers** — список chunk-серверов, их статусы и нагрузка;
+- **Disks** — состояние дисков на каждом chunk-сервере;
+- **Mounts** — активные клиенты.
 
 ---
 
