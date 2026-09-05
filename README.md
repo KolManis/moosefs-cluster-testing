@@ -92,7 +92,7 @@ docker exec mfsclient mfsgetsclass /mnt/mfs
 ### 6.2. Посмотреть доступные storage-классы
 
 ```bash
-docker exec mfsclient mfslistsclass /mnt/mfs
+docker exec mfsclient mfslistsclass -l -M /mnt/mfs '*'
 ```
 
 В MooseFS 4 предопределены классы: **2CP** (2 копии), **3CP** (3 копии), **EC4+1** и **EC8+1** (erasure coding).
